@@ -36,7 +36,3 @@ def get_player_stats(response_dict):
         if 'player_stats' in item_data:
             return item_data['player_stats']
     return {}
-
-
-class TooManyLoginAttempts(Exception):
-    pass

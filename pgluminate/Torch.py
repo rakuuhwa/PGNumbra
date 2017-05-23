@@ -8,7 +8,7 @@ from pgoapi.utilities import get_cell_ids, f2i
 
 from pgluminate.config import cfg_get
 from pgluminate.proxy import have_proxies, get_new_proxy
-from pgluminate.utils import TooManyLoginAttempts, get_player_stats
+from pgluminate.utils import get_player_stats
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +37,8 @@ class Torch(object):
         self.api.set_position(self.latitude, self.longitude, random.randrange(3, 170))
         self.last_request = None
 
+        self.last_msg = ''
+
         if have_proxies():
             self.proxy = get_new_proxy()
             self.log_info("Using Proxy: {}".format(self.proxy))
@@ -46,24 +48,41 @@ class Torch(object):
             })
 
     def run(self):
+        # Initial random delay to spread logins.
+        time.sleep(random.randint(0, 10))
         while True:
             self.check_login()
             self.scan_location()
 
-    def scan_location(self):
-        try:
-            self.api.set_position(self.latitude, self.longitude, random.randint(12, 108))
-            cell_ids = get_cell_ids(self.latitude, self.longitude)
-            timestamps = [0, ] * len(cell_ids)
-            req = self.api.create_request()
-            req.get_map_objects(latitude=f2i(self.latitude), longitude=f2i(self.longitude),
-                                since_timestamp_ms=timestamps,
-                                cell_id=cell_ids)
-            response = self.perform_request(req)
+    def scan_once(self):
+        if self.check_login():
+            self.scan_location()
 
-            self.wild_pokemon = self.count_pokemon(response)
-        except Exception as e:
-            pass
+    def scan_location(self):
+        tries = 0
+        max_tries = cfg_get("scan_retries")
+        while tries < max_tries:
+            tries += 1
+            try:
+                self.api.set_position(self.latitude, self.longitude, random.randint(12, 108))
+                cell_ids = get_cell_ids(self.latitude, self.longitude)
+                timestamps = [0, ] * len(cell_ids)
+                req = self.api.create_request()
+                req.get_map_objects(latitude=f2i(self.latitude), longitude=f2i(self.longitude),
+                                    since_timestamp_ms=timestamps,
+                                    cell_id=cell_ids)
+                response = self.perform_request(req)
+
+                self.count_pokemon(response)
+                if self.pokemon:
+                    self.log_info("Successfully scanned location")
+                    return
+                else:
+                    self.log_warning("Emtpy scan (try #{})".format(tries))
+            except Exception as e:
+                self.log_error("Error on get_map_objects (try #{}): {}".format(tries, repr(e)))
+
+        self.log_error("Failed {} times. Giving up.".format(max_tries))
 
     def count_pokemon(self, response):
         self.pokemon = {}
@@ -90,7 +109,6 @@ class Torch(object):
         self.banned = get_player.get('banned', False)
         time.sleep(4)
 
-
     def check_login(self):
         # Logged in? Enough time left? Cool!
         if self.api._auth_provider and self.api._auth_provider._ticket_expire:
@@ -98,7 +116,7 @@ class Torch(object):
             if remaining_time > 60:
                 self.log_debug(
                     'Credentials remain valid for another {} seconds.'.format(remaining_time))
-                return
+                return True
 
         # Try to login. Repeat a few times, but don't get stuck here.
         num_tries = 0
@@ -121,12 +139,12 @@ class Torch(object):
             self.log_error(
                 'Failed to login for {} tries. Giving up.'.format(
                     num_tries))
-            raise TooManyLoginAttempts('Exceeded login attempts.')
+            return False
 
         wait_after_login = cfg_get('wait_after_login')
-        self.log_info('Login successful. Waiting {} more seconds.'.format(wait_after_login))
         time.sleep(wait_after_login)
         self.update_player_state()
+        return True
 
     def perform_request(self, req, delay=12):
         req.check_challenge()
@@ -159,17 +177,17 @@ class Torch(object):
 
     def log_info(self, msg):
         self.last_msg = msg
-        log.info(msg)
+        log.info("{}: {}".format(self.username, msg))
 
     def log_debug(self, msg):
         self.last_msg = msg
-        log.debug(msg)
+        log.debug("{}: {}".format(self.username, msg))
 
     def log_warning(self, msg):
         self.last_msg = msg
-        log.warning(msg)
+        log.warning("{}: {}".format(self.username, msg))
 
     def log_error(self, msg):
         self.last_msg = msg
-        log.error(msg)
+        log.error("{}: {}".format(self.username, msg))
 
