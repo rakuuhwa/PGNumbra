@@ -14,9 +14,6 @@ from pgluminate.utils import get_pokemon_name
 
 
 def input_processor(state):
-    mainlog = logging.getLogger()
-    default_log_level = mainlog.getEffectiveLevel()
-
     while True:
         # Wait for the user to press a key.
         command = raw_input()
@@ -26,12 +23,6 @@ def input_processor(state):
         elif command == 'q':
             os._exit(0)
 
-        # Disable logging if in fullscreen more
-        if state['display'] == 'logs':
-            mainlog.setLevel(default_log_level)
-        else:
-            mainlog.setLevel(logging.CRITICAL)
-
 
 def print_status(torches, dummy):
     state = {
@@ -40,7 +31,7 @@ def print_status(torches, dummy):
     # Start another thread to get user input.
     t = Thread(target=input_processor,
                name='input_processor',
-               args=(state))
+               args=(state,))
     t.daemon = True
     t.start()
 
