@@ -217,16 +217,16 @@ class POGOAccount(object):
             self._call_request(request)
             time.sleep(random.uniform(.43, .97))
         except Exception as e:
-            self.log_debug('Login failed. Exception in call request: %s',
-                           repr(e))
+            self.log_debug(
+                'Login failed. Exception in call request: {}'.format(repr(e)))
 
         try:  # 1 - get_player
             # Get warning/banned flags and tutorial state.
             self.update_player_state()
             time.sleep(random.uniform(.53, 1.1))
         except Exception as e:
-            self.log_debug('Login failed. Exception in get_player: %s',
-                           repr(e))
+            self.log_debug(
+                'Login failed. Exception in get_player: {}'.format(repr(e)))
 
         # 2 - download_remote_config needed?
 
@@ -243,8 +243,8 @@ class POGOAccount(object):
             time.sleep(random.uniform(.2, .3))
         except Exception as e:
             self.log_debug(
-                'Login failed. Exception in ' + 'get_player_profile: %s',
-                repr(e))
+                'Login failed. Exception in ' + 'get_player_profile: {}'.format(
+                    repr(e)))
 
         try:  # 4 - level_up_rewards
             request = self.api.create_request()
@@ -259,8 +259,8 @@ class POGOAccount(object):
             time.sleep(random.uniform(.45, .7))
         except Exception as e:
             self.log_debug(
-                'Login failed. Exception in ' + 'level_up_rewards: %s',
-                repr(e))
+                'Login failed. Exception in level_up_rewards: {}'.format(
+                    repr(e)))
 
         self.log_info('After-login procedure completed. Cooling down a bit...')
         time.sleep(random.uniform(10, 20))
