@@ -66,7 +66,7 @@ def print_torches(lines, state, torches):
             km_walked_str = '{:.0f}'.format(km_walked_f)
         else:
             km_walked_str = ""
-        warned = '' if t.warned is None else ('Yes' if t.warned else 'No')
+        warned = '' if not 'warn' in t.player_state is None else ('Yes' if t.player_state['warn'] else 'No')
         cols = [
             current_line,
             t.username,

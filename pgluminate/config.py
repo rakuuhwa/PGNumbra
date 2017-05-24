@@ -9,12 +9,19 @@ cfg = {
     'scan_retries': 3,
     'include_nearby': False,
     'pokemon_name_format': 'full',
-    'checkonce_threads': 10
+    'checkonce_threads': 10,
+    # API related values, usually don't need to change them
+    'login_retries': 3,
+    'login_delay': 6
 }
 
 
 def cfg_get(key):
     return cfg[key]
+
+
+def cfg_set(key, val):
+    cfg[key] = val
 
 
 file_path = os.path.join('config.json')

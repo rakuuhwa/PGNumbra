@@ -5,7 +5,7 @@ import logging
 import sys
 from threading import Thread
 
-import requests
+import POGOAccount
 from queue import Queue
 
 from pgluminate.config import cfg_get
@@ -52,10 +52,10 @@ def check_proxy(proxy_queue, timeout, working_proxies, check_results):
         log.debug('Checking proxy: %s', proxy[1])
 
         try:
-            proxy_response = requests.post(proxy_test_url, '',
-                                           proxies={'http': proxy[1],
+            proxy_response = POGOAccount.post(proxy_test_url, '',
+                                              proxies={'http': proxy[1],
                                                     'https': proxy[1]},
-                                           timeout=timeout)
+                                              timeout=timeout)
 
             if proxy_response.status_code == 200:
                 log.debug('Proxy %s is ok.', proxy[1])
@@ -75,12 +75,12 @@ def check_proxy(proxy_queue, timeout, working_proxies, check_results):
                                str(proxy_response.status_code))
                 check_result = check_result_wrong
 
-        except requests.ConnectTimeout:
+        except POGOAccount.ConnectTimeout:
             proxy_error = ("Connection timeout (" + str(timeout) +
                            " second(s) ) via proxy " + proxy[1])
             check_result = check_result_timeout
 
-        except requests.ConnectionError:
+        except POGOAccount.ConnectionError:
             proxy_error = "Failed to connect to proxy " + proxy[1]
             check_result = check_result_failed
 
