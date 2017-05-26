@@ -5,11 +5,10 @@ import os
 cfg = {
     'accounts_file': 'accounts.csv',
     'proxies_file': '',
-    'wait_after_login': 10,
     'scan_retries': 3,
     'include_nearby': False,
     'pokemon_name_format': 'full',
-    'checkonce_threads': 10,
+    'shadowcheck_threads': 10,
     # API related values, usually don't need to change them
     'login_retries': 3,
     'login_delay': 6

@@ -3,12 +3,16 @@ import random
 
 import time
 
+import math
+from uuid import uuid4
+
+import geopy
 from pgoapi import PGoApi
 from pgoapi.exceptions import AuthException
 from pgoapi.protos.pogoprotos.inventory.item.item_id_pb2 import *
 
-from pgluminate.config import cfg_get
-from pgluminate.proxy import have_proxies, get_new_proxy
+from pgnumbra.config import cfg_get
+from pgnumbra.proxy import have_proxies, get_new_proxy
 
 log = logging.getLogger(__name__)
 
@@ -19,14 +23,14 @@ class POGOAccount(object):
         self.auth_service = auth_service
         self.username = username
         self.password = password
-        self.api = PGoApi()
 
-        self.api.activate_hash_server(cfg_get('hash_key'))
+        self._api = PGoApi(device_info=self._generate_device_info())
+        self._api.activate_hash_server(cfg_get('hash_key'))
 
-        self.proxy_url = None
+        self._proxy_url = None
         if have_proxies():
-            self.proxy_url = get_new_proxy()
-            self.log_info("Using proxy: {}".format(self.proxy_url))
+            self._proxy_url = get_new_proxy()
+            self.log_info("Using proxy: {}".format(self._proxy_url))
 
         # Tutorial state and warn/ban flags
         self.player_state = {}
@@ -34,12 +38,22 @@ class POGOAccount(object):
         # Trainer statistics
         self.player_stats = {}
 
+        # Inventory information
         self.inventory = None
         self.inventory_balls = 0
         self.inventory_total = 0
-        self.last_timestamp_ms = None
 
+        # Timestamp for incremental inventory updates
+        self._last_timestamp_ms = None
+
+        # Last log message (for GUI/console)
         self.last_msg = ""
+
+    def set_position(self, lat, lng, alt):
+        self._api.set_position(lat, lng, alt)
+
+    def create_request(self):
+        return self._api.create_request()
 
     def perform_request(self, prep_req, delay=12):
         # Wait before we perform the request
@@ -47,7 +61,7 @@ class POGOAccount(object):
         if self.last_request and time.time() - self.last_request < d:
             time.sleep(d - (time.time() - self.last_request))
 
-        req = self.api.create_request()
+        req = self.create_request()
         prep_req(req)
         req.check_challenge()
         req.get_hatched_eggs()
@@ -60,8 +74,8 @@ class POGOAccount(object):
     def check_login(self):
 
         # Logged in? Enough time left? Cool!
-        if self.api._auth_provider and self.api._auth_provider._ticket_expire:
-            remaining_time = self.api._auth_provider._ticket_expire / 1000 - time.time()
+        if self._api._auth_provider and self._api._auth_provider._ticket_expire:
+            remaining_time = self._api._auth_provider._ticket_expire / 1000 - time.time()
             if remaining_time > 60:
                 return
 
@@ -70,14 +84,14 @@ class POGOAccount(object):
         # One initial try + login_retries.
         while num_tries < (cfg_get('login_retries') + 1):
             try:
-                if self.proxy_url:
-                    self.api.set_authentication(
+                if self._proxy_url:
+                    self._api.set_authentication(
                         provider=self.auth_service,
                         username=self.username,
                         password=self.password,
-                        proxy_config={'http': self.proxy_url, 'https': self.proxy_url})
+                        proxy_config={'http': self._proxy_url, 'https': self._proxy_url})
                 else:
-                    self.api.set_authentication(
+                    self._api.set_authentication(
                         provider=self.auth_service,
                         username=self.username,
                         password=self.password)
@@ -98,7 +112,7 @@ class POGOAccount(object):
 
     # Returns warning/banned flags and tutorial state.
     def update_player_state(self):
-        request = self.api.create_request()
+        request = self._api.create_request()
         request.get_player(
             player_locale={'country': 'US',
                            'language': 'en',
@@ -113,7 +127,50 @@ class POGOAccount(object):
             'banned': get_player.get('banned', False)
         }
 
+    def has_captcha(self, responses):
+        captcha_url = responses.get('CHECK_CHALLENGE', {}).get('challenge_url', '')
+        return len(captcha_url) > 1
+
     # =======================================================================
+
+    def _generate_device_info(self):
+        device_info = {
+            'device_brand': 'Apple',
+            'device_model': 'iPhone',
+            'hardware_manufacturer': 'Apple',
+            'firmware_brand': 'iPhone OS'
+        }
+
+        # Generate random device info.
+        # Original by Noctem.
+        IPHONES = {
+            'iPhone5,1': 'N41AP',
+            'iPhone5,2': 'N42AP',
+            'iPhone5,3': 'N48AP',
+            'iPhone5,4': 'N49AP',
+            'iPhone6,1': 'N51AP',
+            'iPhone6,2': 'N53AP',
+            'iPhone7,1': 'N56AP',
+            'iPhone7,2': 'N61AP',
+            'iPhone8,1': 'N71AP',
+            'iPhone8,2': 'N66AP',
+            'iPhone8,4': 'N69AP',
+            'iPhone9,1': 'D10AP',
+            'iPhone9,2': 'D11AP',
+            'iPhone9,3': 'D101AP',
+            'iPhone9,4': 'D111AP'
+        }
+
+        IOS10_VERSIONS = ('10.1.1', '10.2.1', '10.3.2')
+
+        devices = tuple(IPHONES.keys())
+        device_info['device_model_boot'] = random.choice(devices)
+        device_info['hardware_model'] = IPHONES[
+            device_info['device_model_boot']]
+        device_info['device_id'] = uuid4().hex
+        device_info['firmware_type'] = random.choice(IOS10_VERSIONS)
+
+        return device_info
 
     def _call_request(self, request):
         response = request.call()
@@ -189,15 +246,15 @@ class POGOAccount(object):
             self._update_player_stats(api_inventory)
 
             # Update last timestamp for inventory requests
-            self.last_timestamp_ms = api_inventory[
+            self._last_timestamp_ms = api_inventory[
                 'inventory_delta'].get('new_timestamp_ms', 0)
 
             # Cleanup
             del responses['GET_INVENTORY']
 
     def _add_get_inventory_request(self, request):
-        if self.last_timestamp_ms:
-            request.get_inventory(last_timestamp_ms=self.last_timestamp_ms)
+        if self._last_timestamp_ms:
+            request.get_inventory(last_timestamp_ms=self._last_timestamp_ms)
         else:
             request.get_inventory()
 
@@ -213,7 +270,7 @@ class POGOAccount(object):
         time.sleep(random.uniform(2, 4))
 
         try:  # 0 - empty request
-            request = self.api.create_request()
+            request = self._api.create_request()
             self._call_request(request)
             time.sleep(random.uniform(.43, .97))
         except Exception as e:
@@ -231,7 +288,7 @@ class POGOAccount(object):
         # 2 - download_remote_config needed?
 
         try:  # 3 - get_player_profile
-            request = self.api.create_request()
+            request = self._api.create_request()
             request.get_player_profile()
             request.check_challenge()
             request.get_hatched_eggs()
@@ -247,7 +304,7 @@ class POGOAccount(object):
                     repr(e)))
 
         try:  # 4 - level_up_rewards
-            request = self.api.create_request()
+            request = self._api.create_request()
             request.level_up_rewards(level=self.player_stats['level'])
             request.check_challenge()
             request.get_hatched_eggs()
@@ -265,6 +322,14 @@ class POGOAccount(object):
         self.log_info('After-login procedure completed. Cooling down a bit...')
         time.sleep(random.uniform(10, 20))
 
+    def jitter_location(self, lat, lng, maxMeters=10):
+        origin = geopy.Point(lat, lng)
+        b = random.randint(0, 360)
+        d = math.sqrt(random.random()) * (float(maxMeters) / 1000)
+        destination = geopy.distance.distance(kilometers=d).destination(origin,
+                                                                        b)
+        return (destination.latitude, destination.longitude)
+
     def log_info(self, msg):
         self.last_msg = msg
         log.info("[{}] {}".format(self.username, msg))
@@ -280,9 +345,3 @@ class POGOAccount(object):
     def log_error(self, msg):
         self.last_msg = msg
         log.error("[{}] {}".format(self.username, msg))
-
-
-class TooManyLoginAttempts(Exception):
-    pass
-
-

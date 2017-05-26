@@ -4,9 +4,9 @@ from Queue import Queue
 from multiprocessing.pool import ThreadPool
 from threading import Thread
 
-from pgluminate.Torch import Torch
-from pgluminate.config import cfg_get, cfg_set
-from pgluminate.proxy import init_proxies
+from pgnumbra.Torch import Torch
+from pgnumbra.config import cfg_get, cfg_set
+from pgnumbra.proxy import init_proxies
 
 # ===========================================================================
 
@@ -169,7 +169,7 @@ with open(cfg_get('accounts_file'), 'r') as f:
         fields = map(str.strip, fields)
         torches.append(Torch(fields[0], fields[1], fields[2], lat, lng))
 
-num_threads = cfg_get('checkonce_threads')
+num_threads = cfg_get('shadowcheck_threads')
 log.info("Checking {} accounts with {} threads.".format(len(torches), num_threads))
 pool = ThreadPool(num_threads)
 pool.map(check_account, torches)

@@ -1,7 +1,7 @@
 import json
 import os
 
-from pgluminate.config import cfg_get
+from pgnumbra.config import cfg_get
 
 
 def get_pokemon_name(pokemon_id):

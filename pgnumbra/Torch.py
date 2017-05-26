@@ -4,8 +4,8 @@ import time
 
 from pgoapi.utilities import get_cell_ids, f2i
 
-from pgluminate.POGOAccount import POGOAccount
-from pgluminate.config import cfg_get
+from pgnumbra.POGOAccount import POGOAccount
+from pgnumbra.config import cfg_get
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class Torch(POGOAccount):
         self.latitude = latitude
         self.longitude = longitude
         # Init API location
-        self.api.set_position(self.latitude, self.longitude, random.randrange(3, 170))
+        self.set_position(self.latitude, self.longitude, random.randrange(3, 170))
 
         self.pokemon = {}
 

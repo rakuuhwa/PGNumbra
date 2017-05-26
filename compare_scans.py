@@ -2,12 +2,12 @@ import logging
 import time
 from threading import Thread
 
-from pgluminate.Torch import Torch
-from pgluminate.config import cfg_get
-from pgluminate.console import print_status
-from pgluminate.proxy import init_proxies
+from pgnumbra.Torch import Torch
+from pgnumbra.config import cfg_get
+from pgnumbra.console import print_status
+from pgnumbra.proxy import init_proxies
 
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(filename="compare_scans.log", level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
 
 log = logging.getLogger(__name__)

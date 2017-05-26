@@ -8,7 +8,7 @@ from threading import Thread
 import POGOAccount
 from queue import Queue
 
-from pgluminate.config import cfg_get
+from pgnumbra.config import cfg_get
 
 log = logging.getLogger(__name__)
 

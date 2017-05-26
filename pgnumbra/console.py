@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 from threading import Thread
 
-from pgluminate.utils import get_pokemon_name
+from pgnumbra.utils import get_pokemon_name
 
 
 def input_processor(state):
@@ -66,28 +66,39 @@ def print_torches(lines, state, torches):
             km_walked_str = '{:.0f}'.format(km_walked_f)
         else:
             km_walked_str = ""
-        warned = '' if not 'warn' in t.player_state is None else ('Yes' if t.player_state['warn'] else 'No')
+        warn = t.player_state.get('warn')
+        warned = '' if warn is None else ('Yes' if warn else 'No')
+        ban = t.player_state.get('banned')
+        banned = '' if ban is None else ('Yes' if ban else 'No')
         cols = [
             current_line,
             t.username,
             t.player_stats.get('level', ''),
             km_walked_str,
-            warned
+            warned,
+            banned
         ]
-        for pid in sorted(seen_pokemon):
-            cols.append(t.pokemon.get(pid, ''))
-        return line_tmpl.format(*cols)
+        if ban == True:
+            cols.append('Account banned!')
+            return msg_tmpl.format(*cols)
+        elif not t.pokemon:
+            cols.append(t.last_msg or '')
+            return msg_tmpl.format(*cols)
+        else:
+            for pid in sorted(seen_pokemon):
+                cols.append(t.pokemon.get(pid, ''))
+            return line_tmpl.format(*cols)
 
     len_num = str(len(str(len(torches))))
     len_username = str(reduce(lambda l1, l2: max(l1, l2),
                               map(lambda s: len(s.username), torches)))
-    line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:3} | {:4} | {:3}'
+    line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:3} | {:4} | {:3} | {:3}'
+    msg_tmpl = line_tmpl + u' | {}'
 
     # Top line
-    top_tmpl = line_tmpl + u' | Pokemon'
-    lines.append(top_tmpl.format('', '', '', '', ''))
+    lines.append(msg_tmpl.format('', '', '', '', '', '', 'Pokemon'))
 
-    cols = ['#', 'Account', 'Lvl', 'km', 'Wrn']
+    cols = ['#', 'Account', 'Lvl', 'km', 'Wrn', 'Ban']
     seen_pokemon = determine_seen_pokemon(torches)
     for pid in sorted(seen_pokemon):
         pname = seen_pokemon[pid]
