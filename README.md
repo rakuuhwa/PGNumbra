@@ -15,6 +15,8 @@ Do the regular `pip install -r requirements.txt` stuff. That's it.
 ## Configuration
 Both tools use the same configuration file. Just copy&edit `config.json.sample` to `config.json` and add some accounts and/or proxies to their respective files. Then run `python <script name>`. The configuration options are:
 
+* `latitude`: Latitude of location to scan. **You should use a location where you are sure that a "rare" Pokémon is nearby.**
+* `longitude`: Longitude of location to scan.
 * `accounts_file`: Name of a CSV file containing accounts in the format `<auth service>,<username>,<password>` - same as RocketMap
 * `proxies_file`: File containing `<host>:<port>` proxies
 * `scan_retries`: How often the tools retry to scan the location. Defaults to `3`
