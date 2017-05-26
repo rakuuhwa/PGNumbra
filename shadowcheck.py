@@ -22,7 +22,41 @@ logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
 
 FILE_PREFIX = 'accounts'
 
-# Shadowbanned accounts cannot see these Pokemon
+COMMON_POKEMON = [
+    16,     # Pidgey
+    19,     # Rattata
+    23,     # Ekans
+    27,     # Sandshrew
+    29,     # Nidoran F
+    32,     # Nidoran M
+    41,     # Zubat
+    43,     # Oddish
+    46,     # Paras
+    52,     # Meowth
+    54,     # Psyduck
+    60,     # Poliwag
+    69,     # Bellsprout
+    72,     # Tentacool
+    74,     # Geodude
+    81,     # Magnemite
+    98,     # Krabby
+    118,    # Goldeen
+    120,    # Staryu
+    129,    # Magikarp
+    161,    # Sentret
+    165,    # Ledyba
+    167,    # Spinarak
+    177,    # Natu
+    183,    # Marill
+    187,    # Hoppip
+    191,    # Sunkern
+    194,    # Wooper
+    198,    # Murkrow
+    209,    # Snubbull
+    218     # Slugma
+]
+
+# Shadowbanned accounts cannot see these Pokemon - INCOMPLETE
 HIDDEN_POKEMON = [
     7,      # Squirtle
     13,     # Weedle
@@ -30,15 +64,26 @@ HIDDEN_POKEMON = [
     21,     # Spearow
     22,     # Fearow
     48,     # Venonat
+    66,     # Machop
     70,     # Weepinbell
     75,     # Graveler
     79,     # Slowpoke
     90,     # Shellder
+    92,     # Gastly
+    93,     # Haunter
     95,     # Onix
+    109,    # Koffing
     111,    # Rhyhorn
     116,    # Horsea
+    122,    # Mr. Mime
+    123,    # Scyther
+    124,    # Jynx
+    130,    # Gyarados
+    133,    # Eevee
     138,    # Omanyte
     140,    # Kabuto
+    143,    # Snorlax
+    152,    # Chikorita
     162,    # Furret
     163,    # Hoothoot
     166,    # Ledian
@@ -53,7 +98,6 @@ HIDDEN_POKEMON = [
     224,    # Octillery
     226     # Mantine
 ]
-
 acc_stats = {
     'good': 0,
     'blind': 0,
@@ -97,7 +141,7 @@ def save_to_file(torch, suffix):
 
 def is_blind(torch):
     for pid in torch.pokemon:
-        if pid in HIDDEN_POKEMON:
+        if pid not in COMMON_POKEMON:
             return False
     return True
 
