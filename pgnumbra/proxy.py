@@ -5,7 +5,7 @@ import logging
 import sys
 from threading import Thread
 
-import POGOAccount
+import requests
 from queue import Queue
 
 from pgnumbra.config import cfg_get
@@ -52,7 +52,7 @@ def check_proxy(proxy_queue, timeout, working_proxies, check_results):
         log.debug('Checking proxy: %s', proxy[1])
 
         try:
-            proxy_response = POGOAccount.post(proxy_test_url, '',
+            proxy_response = requests.post(proxy_test_url, '',
                                               proxies={'http': proxy[1],
                                                     'https': proxy[1]},
                                               timeout=timeout)
@@ -75,12 +75,12 @@ def check_proxy(proxy_queue, timeout, working_proxies, check_results):
                                str(proxy_response.status_code))
                 check_result = check_result_wrong
 
-        except POGOAccount.ConnectTimeout:
+        except requests.ConnectTimeout:
             proxy_error = ("Connection timeout (" + str(timeout) +
                            " second(s) ) via proxy " + proxy[1])
             check_result = check_result_timeout
 
-        except POGOAccount.ConnectionError:
+        except requests.ConnectionError:
             proxy_error = "Failed to connect to proxy " + proxy[1]
             check_result = check_result_failed
 
