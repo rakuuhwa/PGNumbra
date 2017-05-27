@@ -126,7 +126,6 @@ def check_account(torch):
     else:
         log.error("Account {} could not scan location: {}".format(torch.username, torch.last_msg))
         save_to_file(torch, 'error')
-    del torch.api
     del torch
 
 
