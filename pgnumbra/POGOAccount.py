@@ -115,6 +115,9 @@ class POGOAccount(object):
                 'Failed to login in {} tries. Giving up.'.format(num_tries))
             return False
         self._perform_after_login_steps()
+        if self.player_state.get('banned'):
+            self.log_error("Accont BANNED! :-(((")
+            return False
         return True
 
     # Returns warning/banned flags and tutorial state.
