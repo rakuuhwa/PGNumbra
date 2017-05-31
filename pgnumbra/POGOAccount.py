@@ -42,6 +42,8 @@ class POGOAccount(object):
         # Trainer statistics
         self.player_stats = {}
 
+        self.captcha_url = None
+
         # Inventory information
         self.inventory = None
         self.inventory_balls = 0
@@ -138,9 +140,24 @@ class POGOAccount(object):
             'banned': get_player.get('banned', False)
         }
 
-    def has_captcha(self, responses):
-        captcha_url = responses.get('CHECK_CHALLENGE', {}).get('challenge_url', '')
-        return len(captcha_url) > 1
+    def is_logged_in(self):
+        # Logged in? Enough time left? Cool!
+        if self._api._auth_provider and self._api._auth_provider._ticket_expire:
+            remaining_time = self._api._auth_provider._ticket_expire / 1000 - time.time()
+            return remaining_time > 60
+        return False
+
+    def is_warned(self):
+        return None if not self.is_logged_in() else (
+            self.player_state.get('warn') is True)
+
+    def is_banned(self):
+        return None if not self.is_logged_in() else (
+            self.player_state.get('banned') is True)
+
+    def has_captcha(self):
+        return None if not self.is_logged_in() else (
+            self.captcha_url and len(self.captcha_url) > 1)
 
     # =======================================================================
 
@@ -263,6 +280,11 @@ class POGOAccount(object):
             # Cleanup
             del responses['GET_INVENTORY']
 
+        # Check for captcha
+        if 'CHECK_CHALLENGE' in responses:
+            self.captcha_url = responses['CHECK_CHALLENGE'].get('challenge_url')
+
+
     def _add_get_inventory_request(self, request):
         if self._last_timestamp_ms:
             request.get_inventory(last_timestamp_ms=self._last_timestamp_ms)
@@ -297,7 +319,7 @@ class POGOAccount(object):
                 'Login failed. Exception in get_player: {}'.format(repr(e)))
 
         if self.player_state.get('banned'):
-            self.log_error("Accont BANNED! :-(((")
+            self.log_error("Account BANNED! :-(((")
             return False
 
         # 2 - download_remote_config needed?
@@ -317,6 +339,10 @@ class POGOAccount(object):
             self.log_debug(
                 'Login failed. Exception in ' + 'get_player_profile: {}'.format(
                     repr(e)))
+
+        if self.has_captcha():
+            self.log_error("Account CAPTCHA'd! :-|")
+            return False
 
         try:  # 4 - level_up_rewards
             request = self._api.create_request()

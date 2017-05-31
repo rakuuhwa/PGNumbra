@@ -60,6 +60,8 @@ COMMON_POKEMON = [
 acc_stats = {
     'good': 0,
     'blind': 0,
+    'captcha': 0,
+    'banned': 0,
     'error': 0
 }
 
@@ -83,8 +85,12 @@ def check_account(torch):
             log.info("Account {} is good. :-)".format(torch.username))
             save_to_file(torch, 'good')
     else:
-        log.error("Account {} could not scan location: {}".format(torch.username, torch.last_msg))
-        save_to_file(torch, 'error')
+        if torch.is_banned():
+            save_to_file(torch, 'banned')
+        elif torch.has_captcha():
+            save_to_file(torch, 'captcha')
+        else:
+            save_to_file(torch, 'error')
     save_account_info(torch)
     del torch
 
@@ -106,8 +112,9 @@ def save_account_info(acc):
             acc.username,
             acc.player_stats.get('level', ''),
             acc.player_stats.get('experience', ''),
-            bool(acc.player_state.get('warn')),
-            bool(acc.player_state.get('banned')),
+            bool(acc.is_warned()),
+            bool(acc.is_banned()),
+            bool(acc.has_captcha()),
             bool(is_blind(acc)),
             acc.player_stats.get('pokemons_encountered', ''),
             acc.player_stats.get('pokeballs_thrown', ''),
@@ -125,15 +132,16 @@ def init_account_info_file(torches):
     for t in torches:
         max_username_len = max(max_username_len, len(t.username))
     acc_info_tmpl = '{:' + str(
-        max_username_len) + '} | {:3} | {:8} | {:3} | {:3} | {:3} | {:6} | {:5} | {:5} | {:5} | {:10}\n'
+        max_username_len) + '} | {:3} | {:8} | {:4} | {:3} | {:7} | {:5} | {:6} | {:5} | {:5} | {:5} | {:10}\n'
     with open(ACC_INFO_FILE, 'a') as f:
         f.write(acc_info_tmpl.format(
             'Username',
             'Lvl',
             'XP',
-            'Wrn',
+            'Warn',
             'Ban',
-            'Bli',
+            'Captcha',
+            'Blind',
             'Enc',
             'Thr.',
             'Cap',
@@ -153,10 +161,19 @@ def save_to_file(torch, suffix):
 
 
 def is_blind(torch):
+    # We don't know if we did not search/find ANY Pokemon
+    if not torch.pokemon:
+        return None
+
     for pid in torch.pokemon:
         if pid not in COMMON_POKEMON:
             return False
     return True
+
+
+def log_results(key):
+    if acc_stats[key]:
+        log.info("{:7}: {}".format(key.upper(), acc_stats[key]))
 
 # ===========================================================================
 
@@ -168,7 +185,10 @@ lng = cfg_get('longitude')
 # Delete result files.
 remove_account_file('good')
 remove_account_file('blind')
+remove_account_file('captcha')
+remove_account_file('banned')
 remove_account_file('error')
+
 if os.path.isfile(ACC_INFO_FILE):
     os.remove(ACC_INFO_FILE)
 
@@ -194,11 +214,14 @@ pool.map(check_account, torches)
 pool.close()
 pool.join()
 
-log.info(
-    "All {} accounts processed. Detected {} GOOD, {} BLIND ones and {} with ERRORs.".format(
-        len(torches), acc_stats['good'], acc_stats['blind'], acc_stats['error']))
+log.info("All {} accounts processed.".format(len(torches)))
+log_results('good')
+log_results('blind')
+log_results('captcha')
+log_results('banned')
+log_results('error')
 
-if acc_stats['good'] == 0:
+if acc_stats['good'] == 0 and acc_stats['blind'] > 0:
     log.warning("================= WARNING =================")
     log.warning("NONE of the accounts saw ANY rare Pokemon.")
     log.warning("Either they are all blind or there are in fact")
