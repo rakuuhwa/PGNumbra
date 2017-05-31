@@ -2,7 +2,6 @@ import logging
 import os
 from Queue import Queue
 from multiprocessing.pool import ThreadPool
-from threading import Thread
 
 from pgnumbra.Torch import Torch
 from pgnumbra.config import cfg_get, cfg_set
@@ -57,48 +56,6 @@ COMMON_POKEMON = [
     218     # Slugma
 ]
 
-# Shadowbanned accounts cannot see these Pokemon - INCOMPLETE
-HIDDEN_POKEMON = [
-    7,      # Squirtle
-    13,     # Weedle
-    20,     # Raticate
-    21,     # Spearow
-    22,     # Fearow
-    48,     # Venonat
-    66,     # Machop
-    70,     # Weepinbell
-    75,     # Graveler
-    79,     # Slowpoke
-    90,     # Shellder
-    92,     # Gastly
-    93,     # Haunter
-    95,     # Onix
-    109,    # Koffing
-    111,    # Rhyhorn
-    116,    # Horsea
-    122,    # Mr. Mime
-    123,    # Scyther
-    124,    # Jynx
-    130,    # Gyarados
-    133,    # Eevee
-    138,    # Omanyte
-    140,    # Kabuto
-    143,    # Snorlax
-    152,    # Chikorita
-    162,    # Furret
-    163,    # Hoothoot
-    166,    # Ledian
-    168,    # Ariados
-    170,    # Chinchou
-    184,    # Azumarill
-    185,    # Sudowoodo
-    213,    # Shuckle
-    216,    # Teddiursa
-    219,    # Magcargo
-    223,    # Remoraid
-    224,    # Octillery
-    226     # Mantine
-]
 acc_stats = {
     'good': 0,
     'blind': 0,
