@@ -20,6 +20,7 @@ logging.getLogger('pgoapi').setLevel(logging.WARNING)
 # ===========================================================================
 
 FILE_PREFIX = 'accounts'
+ACC_INFO_FILE = FILE_PREFIX + '-info.txt'
 
 COMMON_POKEMON = [
     16,     # Pidgey
@@ -84,7 +85,62 @@ def check_account(torch):
     else:
         log.error("Account {} could not scan location: {}".format(torch.username, torch.last_msg))
         save_to_file(torch, 'error')
+    save_account_info(torch)
     del torch
+
+
+def save_account_info(acc):
+    global acc_info_tmpl
+
+    def bool(x):
+        return '' if x is None else ('Yes' if x else 'No')
+
+    km_walked_f = acc.player_stats.get('km_walked')
+    if km_walked_f:
+        km_walked_str = '{:.1f} km'.format(km_walked_f)
+    else:
+        km_walked_str = ''
+
+    with open(ACC_INFO_FILE, 'a') as f:
+        f.write(acc_info_tmpl.format(
+            acc.username,
+            acc.player_stats.get('level', ''),
+            acc.player_stats.get('experience', ''),
+            bool(acc.player_state.get('warn')),
+            bool(acc.player_state.get('banned')),
+            bool(is_blind(acc)),
+            acc.player_stats.get('pokemons_encountered', ''),
+            acc.player_stats.get('pokeballs_thrown', ''),
+            acc.player_stats.get('pokemons_captured', ''),
+            acc.player_stats.get('poke_stop_visits', ''),
+            km_walked_str
+        ))
+        f.close()
+
+
+def init_account_info_file(torches):
+    global acc_info_tmpl
+
+    max_username_len = 4
+    for t in torches:
+        max_username_len = max(max_username_len, len(t.username))
+    acc_info_tmpl = '{:' + str(
+        max_username_len) + '} | {:3} | {:8} | {:3} | {:3} | {:3} | {:6} | {:5} | {:5} | {:5} | {:10}\n'
+    with open(ACC_INFO_FILE, 'a') as f:
+        f.write(acc_info_tmpl.format(
+            'Username',
+            'Lvl',
+            'XP',
+            'Wrn',
+            'Ban',
+            'Bli',
+            'Enc',
+            'Thr.',
+            'Cap',
+            'Spins',
+            'Walked'
+        ))
+        f.close()
 
 
 def save_to_file(torch, suffix):
@@ -109,9 +165,12 @@ log.info("ShadowCheck starting up.")
 lat = cfg_get('latitude')
 lng = cfg_get('longitude')
 
+# Delete result files.
 remove_account_file('good')
 remove_account_file('blind')
 remove_account_file('error')
+if os.path.isfile(ACC_INFO_FILE):
+    os.remove(ACC_INFO_FILE)
 
 init_proxies()
 
@@ -125,6 +184,8 @@ with open(cfg_get('accounts_file'), 'r') as f:
         fields = line.split(",")
         fields = map(str.strip, fields)
         torches.append(Torch(fields[0], fields[1], fields[2], lat, lng))
+
+init_account_info_file(torches)
 
 num_threads = cfg_get('shadowcheck_threads')
 log.info("Checking {} accounts with {} threads.".format(len(torches), num_threads))
