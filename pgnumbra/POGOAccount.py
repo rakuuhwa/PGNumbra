@@ -91,34 +91,35 @@ class POGOAccount(object):
         # One initial try + login_retries.
         while num_tries < cfg_get('login_retries'):
             try:
+                num_tries += 1
+                self.log_info("Login try {}.".format(num_tries))
                 if self._proxy_url:
                     self._api.set_authentication(
                         provider=self.auth_service,
                         username=self.username,
                         password=self.password,
-                        proxy_config={'http': self._proxy_url, 'https': self._proxy_url})
+                        proxy_config={
+                            'http': self._proxy_url,
+                            'https': self._proxy_url
+                        })
                 else:
                     self._api.set_authentication(
                         provider=self.auth_service,
                         username=self.username,
                         password=self.password)
+                self.log_info("Login successful after {} tries.".format(num_tries))
                 break
             except AuthException:
-                num_tries += 1
                 self.log_error(
                     'Failed to login. Trying again in {} seconds.'.format(
                         cfg_get('login_delay')))
                 time.sleep(cfg_get('login_delay'))
 
-        if num_tries > cfg_get('login_retries'):
+        if num_tries >= cfg_get('login_retries'):
             self.log_error(
                 'Failed to login in {} tries. Giving up.'.format(num_tries))
             return False
-        self._perform_after_login_steps()
-        if self.player_state.get('banned'):
-            self.log_error("Accont BANNED! :-(((")
-            return False
-        return True
+        return self._perform_after_login_steps()
 
     # Returns warning/banned flags and tutorial state.
     def update_player_state(self):
@@ -295,6 +296,10 @@ class POGOAccount(object):
             self.log_debug(
                 'Login failed. Exception in get_player: {}'.format(repr(e)))
 
+        if self.player_state.get('banned'):
+            self.log_error("Accont BANNED! :-(((")
+            return False
+
         # 2 - download_remote_config needed?
 
         try:  # 3 - get_player_profile
@@ -331,6 +336,7 @@ class POGOAccount(object):
 
         self.log_info('After-login procedure completed. Cooling down a bit...')
         time.sleep(random.uniform(10, 20))
+        return True
 
     def jitter_location(self, lat, lng, maxMeters=10):
         origin = geopy.Point(lat, lng)

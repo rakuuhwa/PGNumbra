@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger(__name__)
 
 # Silence some loggers
-logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
+logging.getLogger('pgoapi').setLevel(logging.WARNING)
 
 # ===========================================================================
 
