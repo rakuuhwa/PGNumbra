@@ -89,7 +89,7 @@ class POGOAccount(object):
         # Try to login. Repeat a few times, but don't get stuck here.
         num_tries = 0
         # One initial try + login_retries.
-        while num_tries < (cfg_get('login_retries') + 1):
+        while num_tries < cfg_get('login_retries'):
             try:
                 if self._proxy_url:
                     self._api.set_authentication(
