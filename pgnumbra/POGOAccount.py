@@ -28,13 +28,6 @@ class POGOAccount(object):
         self._api.activate_hash_server(cfg_get('hash_key'))
 
         self._proxy_url = None
-        if have_proxies():
-            self._proxy_url = get_new_proxy()
-            self._api.set_proxy({
-                'http': self._proxy_url,
-                'https': self._proxy_url
-            })
-            self.log_info("Using proxy: {}".format(self._proxy_url))
 
         # Tutorial state and warn/ban flags
         self.player_state = {}
@@ -87,6 +80,14 @@ class POGOAccount(object):
             remaining_time = self._api._auth_provider._ticket_expire / 1000 - time.time()
             if remaining_time > 60:
                 return
+
+        if have_proxies() and not self._proxy_url:
+            self._proxy_url = get_new_proxy()
+            self._api.set_proxy({
+                'http': self._proxy_url,
+                'https': self._proxy_url
+            })
+            self.log_info("Using proxy: {}".format(self._proxy_url))
 
         # Try to login. Repeat a few times, but don't get stuck here.
         num_tries = 0
