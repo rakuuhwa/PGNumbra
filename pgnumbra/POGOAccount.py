@@ -1,12 +1,9 @@
 import hashlib
 import logging
-import random
-
-import time
-
 import math
+import random
+import time
 from threading import Lock
-from uuid import uuid4
 
 import geopy
 from pgoapi import PGoApi
