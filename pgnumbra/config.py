@@ -11,7 +11,8 @@ cfg = {
     'shadowcheck_threads': 10,
     # API related values, usually don't need to change them
     'login_retries': 3,
-    'login_delay': 6
+    'login_delay': 6,
+    'random_seed_salt': 0
 }
 
 
