@@ -2,6 +2,7 @@ import logging
 import os
 from Queue import Queue
 from multiprocessing.pool import ThreadPool
+from threading import Lock
 
 from pgnumbra.Torch import Torch
 from pgnumbra.config import cfg_get, cfg_set
@@ -102,6 +103,17 @@ def check_account(torch):
     del torch
 
 
+def write_line_to_file(fname, line):
+    # Poor mans locking. Only 1 thread at any time, please. Super-defensive!
+    if not hasattr(write_line_to_file, 'lock'):
+        write_line_to_file.lock = Lock()
+    write_line_to_file.lock.acquire()
+    with open(fname, 'a') as f:
+        f.write(line)
+        f.close()
+    write_line_to_file.lock.release()
+
+
 def save_account_info(acc):
     global acc_info_tmpl
 
@@ -113,23 +125,21 @@ def save_account_info(acc):
         km_walked_str = '{:.1f} km'.format(km_walked_f)
     else:
         km_walked_str = ''
-
-    with open(ACC_INFO_FILE, 'a') as f:
-        f.write(acc_info_tmpl.format(
-            acc.username,
-            acc.player_stats.get('level', ''),
-            acc.player_stats.get('experience', ''),
-            bool(acc.is_warned()),
-            bool(acc.is_banned()),
-            bool(acc.has_captcha()),
-            bool(is_blind(acc)),
-            acc.player_stats.get('pokemons_encountered', ''),
-            acc.player_stats.get('pokeballs_thrown', ''),
-            acc.player_stats.get('pokemons_captured', ''),
-            acc.player_stats.get('poke_stop_visits', ''),
-            km_walked_str
-        ))
-        f.close()
+    line = acc_info_tmpl.format(
+        acc.username,
+        acc.player_stats.get('level', ''),
+        acc.player_stats.get('experience', ''),
+        bool(acc.is_warned()),
+        bool(acc.is_banned()),
+        bool(acc.has_captcha()),
+        bool(is_blind(acc)),
+        acc.player_stats.get('pokemons_encountered', ''),
+        acc.player_stats.get('pokeballs_thrown', ''),
+        acc.player_stats.get('pokemons_captured', ''),
+        acc.player_stats.get('poke_stop_visits', ''),
+        km_walked_str
+    )
+    write_line_to_file(ACC_INFO_FILE, line)
 
 
 def init_account_info_file(torches):
@@ -140,31 +150,29 @@ def init_account_info_file(torches):
         max_username_len = max(max_username_len, len(t.username))
     acc_info_tmpl = '{:' + str(
         max_username_len) + '} | {:3} | {:8} | {:4} | {:3} | {:7} | {:5} | {:6} | {:5} | {:5} | {:5} | {:10}\n'
-    with open(ACC_INFO_FILE, 'a') as f:
-        f.write(acc_info_tmpl.format(
-            'Username',
-            'Lvl',
-            'XP',
-            'Warn',
-            'Ban',
-            'Captcha',
-            'Blind',
-            'Enc',
-            'Thr.',
-            'Cap',
-            'Spins',
-            'Walked'
-        ))
-        f.close()
+    line = acc_info_tmpl.format(
+        'Username',
+        'Lvl',
+        'XP',
+        'Warn',
+        'Ban',
+        'Captcha',
+        'Blind',
+        'Enc',
+        'Thr.',
+        'Cap',
+        'Spins',
+        'Walked'
+    )
+    write_line_to_file(ACC_INFO_FILE, line)
 
 
 def save_to_file(torch, suffix):
     global acc_stats
     acc_stats[suffix] = acc_stats.get(suffix, 0) + 1
-    with open("{}-{}.csv".format(FILE_PREFIX, suffix), 'a') as f:
-        f.write(
-            '{},{},{}\n'.format(torch.auth_service, torch.username, torch.password))
-        f.close()
+    fname = "{}-{}.csv".format(FILE_PREFIX, suffix)
+    line = '{},{},{}\n'.format(torch.auth_service, torch.username, torch.password)
+    write_line_to_file(fname, line)
 
 
 def is_blind(torch):
