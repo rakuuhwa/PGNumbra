@@ -4,9 +4,8 @@
   "hash_key": "YOUR_HASH_KEY",
   "accounts_file": "accounts.csv",
   "proxies_file": "proxies.txt",
-  "wait_after_login": 10,
   "scan_retries": 3,
   "include_nearby": false,
   "pokemon_name_format": "USE EITHER full OR short OR id",
-  "checkonce_threads": 10
+  "shadowcheck_threads": 10
 }

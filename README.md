@@ -17,8 +17,9 @@ Both tools use the same configuration file. Just copy&edit `config.json.sample` 
 
 * `latitude`: Latitude of location to scan. **You should use a location where you are sure that a "rare" Pokémon is nearby.**
 * `longitude`: Longitude of location to scan.
+* `hash_key`: The Bossland PokéHash key to perform API requests.
 * `accounts_file`: Name of a CSV file containing accounts in the format `<auth service>,<username>,<password>` - same as RocketMap
-* `proxies_file`: File containing `<host>:<port>` proxies
+* `proxies_file`: File containing `<host>:<port>` proxies. Leave empty or remove this line if you don't use any proxies.
 * `scan_retries`: How often the tools retry to scan the location. Defaults to `3`
 * `include_nearby`: Whether to include nearby Pokémon in comparison or not. Defaults to `false`. Only relevant for `compare_scans.py`. `shadowcheck.py` always examines both wild and nearby Pokémon.
 * `pokemon_name_format`: How Pokémon will be shown in the table of `compare_scans.py`. Can be one of `full` (full Pokémon name), `short` (name shortened to 3 letters) or `id` (Pokédex ID). Defaults to `full`
