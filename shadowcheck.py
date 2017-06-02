@@ -76,7 +76,6 @@ def remove_account_file(suffix):
 
 def check_account(torch):
     torch.scan_once()
-    f = None
     if torch.pokemon:
         if is_blind(torch):
             log.info("Account {} is shadowbanned. :-(".format(torch.username))
