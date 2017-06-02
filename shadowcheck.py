@@ -75,22 +75,30 @@ def remove_account_file(suffix):
 
 
 def check_account(torch):
-    torch.scan_once()
-    if torch.pokemon:
-        if is_blind(torch):
-            log.info("Account {} is shadowbanned. :-(".format(torch.username))
-            save_to_file(torch, 'blind')
+    try:
+        torch.scan_once()
+    except Exception as e:
+        log.exception("Error checking account {}".format(torch.username))
+
+    try:
+        if torch.pokemon:
+            if is_blind(torch):
+                log.info("Account {} is shadowbanned. :-(".format(torch.username))
+                save_to_file(torch, 'blind')
+            else:
+                log.info("Account {} is good. :-)".format(torch.username))
+                save_to_file(torch, 'good')
         else:
-            log.info("Account {} is good. :-)".format(torch.username))
-            save_to_file(torch, 'good')
-    else:
-        if torch.is_banned():
-            save_to_file(torch, 'banned')
-        elif torch.has_captcha():
-            save_to_file(torch, 'captcha')
-        else:
-            save_to_file(torch, 'error')
-    save_account_info(torch)
+            if torch.is_banned():
+                save_to_file(torch, 'banned')
+            elif torch.has_captcha():
+                save_to_file(torch, 'captcha')
+            else:
+                save_to_file(torch, 'error')
+        save_account_info(torch)
+    except Exception as e:
+        log.exception(
+            "Error saving checked account {} to file".format(torch.username))
     del torch
 
 
