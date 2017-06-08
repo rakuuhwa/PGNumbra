@@ -2,6 +2,8 @@ import json
 import os
 
 # Configuration with default values
+from mrmime import init_mr_mime
+
 cfg = {
     'accounts_file': 'accounts.csv',
     'proxies_file': '',
@@ -27,3 +29,8 @@ file_path = os.path.join('config.json')
 with open(file_path, 'r') as f:
     user_cfg = json.loads(f.read())
     cfg.update(user_cfg)
+
+init_mr_mime({
+    'login_delay': cfg['login_delay'],
+    'login_retries': cfg['login_retries']
+})

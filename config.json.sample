@@ -8,5 +8,6 @@
   "include_nearby": false,
   "pokemon_name_format": "USE EITHER full OR short OR id",
   "shadowcheck_threads": 10,
-  "hashing_salt": "MY PRIVATE HASHING SALT"
+  "login_retries": 3,
+  "login_delay": 6
 }
