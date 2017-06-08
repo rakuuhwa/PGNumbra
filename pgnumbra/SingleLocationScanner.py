@@ -2,23 +2,26 @@ import logging
 import random
 import time
 
+from mrmime.pogoaccount import POGOAccount
 from pgoapi.utilities import get_cell_ids, f2i
 
-from pgnumbra.POGOAccount import POGOAccount
 from pgnumbra.config import cfg_get
 
 log = logging.getLogger(__name__)
 
 
-class Torch(POGOAccount):
-    def __init__(self, auth, username, password, latitude, longitude):
-        super(Torch, self).__init__(auth, username, password)
+class SingleLocationScanner(POGOAccount):
+    def __init__(self, auth, username, password, latitude, longitude, hash_key, proxy):
+        super(SingleLocationScanner, self).__init__(auth, username, password,
+                                                    hash_key=hash_key,
+                                                    proxy_url=proxy)
 
+        # Init API location
         self.latitude = latitude
         self.longitude = longitude
-        # Init API location
         self.set_position(self.latitude, self.longitude, random.randrange(3, 170))
 
+        # The currently seen Pokemon
         self.pokemon = {}
 
     def run(self):
@@ -27,6 +30,7 @@ class Torch(POGOAccount):
         while True:
             if self.check_login():
                 self.scan_location()
+            time.sleep(15)
 
     def scan_once(self):
         if self.check_login():

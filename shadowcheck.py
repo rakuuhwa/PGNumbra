@@ -4,9 +4,9 @@ from Queue import Queue
 from multiprocessing.pool import ThreadPool
 from threading import Lock
 
-from pgnumbra.Torch import Torch
+from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get, cfg_set
-from pgnumbra.proxy import init_proxies
+from pgnumbra.proxy import init_proxies, get_new_proxy
 
 # ===========================================================================
 
@@ -218,7 +218,9 @@ with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):
         fields = line.split(",")
         fields = map(str.strip, fields)
-        torches.append(Torch(fields[0], fields[1], fields[2], lat, lng))
+        torches.append(
+            SingleLocationScanner(fields[0], fields[1], fields[2], lat, lng,
+                                  cfg_get('hash_key'), get_new_proxy()))
 
 init_account_info_file(torches)
 

@@ -2,10 +2,10 @@ import logging
 import time
 from threading import Thread
 
-from pgnumbra.Torch import Torch
+from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get
 from pgnumbra.console import print_status
-from pgnumbra.proxy import init_proxies
+from pgnumbra.proxy import init_proxies, get_new_proxy
 
 logging.basicConfig(filename="compare_scans.log", level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -30,7 +30,9 @@ with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):
         fields = line.split(",")
         fields = map(str.strip, fields)
-        torch = Torch(fields[0], fields[1], fields[2], lat, lng)
+        torch = SingleLocationScanner(fields[0], fields[1], fields[2], lat,
+                                      lng, cfg_get('hash_key'),
+                                      get_new_proxy())
         torches.append(torch)
         t = Thread(target=torch.run, name="{}".format(torch.username))
         t.daemon = True
