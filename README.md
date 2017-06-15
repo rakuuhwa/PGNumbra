@@ -1,6 +1,12 @@
 # PGNumbra Tools
 Tools that help in identifying and analyzing shadowbanned POGO accounts.
 
+# Support the Author [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/slop)
+If you like PGNumbra Tools and feel the urgent need to thank me, just drop me one or more **level 30 accounts** or buy me a **[PokeHash key](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)**. Seriously, that would be so awesome! :-D You can find me on various Pokémon related Discords as "sLoPPydrive".
+
+# Disclaimer
+PGNumbra Tools or its author takes no responsibility if your accounts get banned in any way. As with any other 3rd party software breaking the ToS there is absolutely no guarantee that your accounts stay safe. This software is purely for educational purpose.
+
 ## Tool 1: `compare_scans.py`
 
 A specific location gets scanned (`GET_MAP_OBJECTS` request) over and over again and the number of found Pokémon get compared in a table view. This way you can determine if some accounts are seeing more than others and also *what* they see exactly. Of course you should have at least one account that is not shadowbanned to see the difference.
