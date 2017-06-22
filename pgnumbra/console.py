@@ -24,7 +24,7 @@ def input_processor(state):
             os._exit(0)
 
 
-def print_status(torches, dummy):
+def print_status(scanners, dummy):
     state = {
         'page': 1
     }
@@ -40,7 +40,7 @@ def print_status(torches, dummy):
 
         lines = []
 
-        total_pages = print_torches(lines, state, torches)
+        total_pages = print_scanners(lines, state, scanners)
 
         # Footer
         lines.append('Page {}/{}. Page number to switch pages.'.format(
@@ -51,29 +51,29 @@ def print_status(torches, dummy):
         print ('\n'.join(lines)).encode('utf-8')
 
 
-def determine_seen_pokemon(torches):
+def determine_seen_pokemon(scanners):
     seen = {}
-    for t in torches:
+    for t in scanners:
         for pid in t.pokemon:
             seen[pid] = get_pokemon_name(pid)
     return seen
 
 
-def print_torches(lines, state, torches):
-    def torch_line(current_line, t, seen_pokemon):
-        km_walked_f = t.player_stats.get('km_walked')
+def print_scanners(lines, state, scanners):
+    def scanner_line(current_line, scanner, seen_pokemon):
+        km_walked_f = scanner.player_stats.get('km_walked')
         if km_walked_f is not None:
             km_walked_str = '{:.0f}'.format(km_walked_f)
         else:
             km_walked_str = ""
-        warn = t.player_state.get('warn')
+        warn = scanner.player_state.get('warn')
         warned = '' if warn is None else ('Yes' if warn else 'No')
-        ban = t.player_state.get('banned')
+        ban = scanner.player_state.get('banned')
         banned = '' if ban is None else ('Yes' if ban else 'No')
         cols = [
             current_line,
-            t.username,
-            t.player_stats.get('level', ''),
+            scanner.username,
+            scanner.player_stats.get('level', ''),
             km_walked_str,
             warned,
             banned
@@ -81,17 +81,17 @@ def print_torches(lines, state, torches):
         if ban == True:
             cols.append('Account banned!')
             return msg_tmpl.format(*cols)
-        elif not t.pokemon:
-            cols.append(t.last_msg or '')
+        elif not scanner.pokemon:
+            cols.append(scanner.last_msg or '')
             return msg_tmpl.format(*cols)
         else:
             for pid in sorted(seen_pokemon):
-                cols.append(t.pokemon.get(pid, ''))
+                cols.append(scanner.pokemon.get(pid, ''))
             return line_tmpl.format(*cols)
 
-    len_num = str(len(str(len(torches))))
+    len_num = str(len(str(len(scanners))))
     len_username = str(reduce(lambda l1, l2: max(l1, l2),
-                              map(lambda s: len(s.username), torches)))
+                              map(lambda s: len(s.username), scanners)))
     line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:3} | {:4} | {:3} | {:3}'
     msg_tmpl = line_tmpl + u' | {}'
 
@@ -99,7 +99,7 @@ def print_torches(lines, state, torches):
     lines.append(msg_tmpl.format('', '', '', '', '', '', 'Pokemon'))
 
     cols = ['#', 'Account', 'Lvl', 'km', 'Wrn', 'Ban']
-    seen_pokemon = determine_seen_pokemon(torches)
+    seen_pokemon = determine_seen_pokemon(scanners)
     for pid in sorted(seen_pokemon):
         pname = seen_pokemon[pid]
         len_name = str(len(pname))
@@ -107,7 +107,7 @@ def print_torches(lines, state, torches):
         cols.append(pname)
 
     lines.append(line_tmpl.format(*cols))
-    return print_lines(lines, torch_line, torches, 4, state, seen_pokemon)
+    return print_lines(lines, scanner_line, scanners, 4, state, seen_pokemon)
 
 
 def print_lines(lines, print_entity, entities, addl_lines, state, seen_pokemon):

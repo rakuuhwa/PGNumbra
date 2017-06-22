@@ -4,6 +4,8 @@ from Queue import Queue
 from multiprocessing.pool import ThreadPool
 from threading import Lock, Thread
 
+from mrmime import init_mr_mime
+
 from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get, cfg_set
 from pgnumbra.proxy import init_proxies, get_new_proxy
@@ -215,9 +217,11 @@ def install_thread_excepthook():
 
 # ===========================================================================
 
-log.info("ShadowCheck starting up.")
+log.info("PGNumbra ShadowCheck starting up.")
 
 install_thread_excepthook()
+
+init_mr_mime()
 
 lat = cfg_get('latitude')
 lng = cfg_get('longitude')

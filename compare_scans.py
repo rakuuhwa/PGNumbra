@@ -2,6 +2,8 @@ import logging
 import time
 from threading import Thread
 
+from mrmime import init_mr_mime
+
 from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get
 from pgnumbra.console import print_status
@@ -13,13 +15,15 @@ logging.basicConfig(filename="compare_scans.log", level=logging.INFO,
 log = logging.getLogger(__name__)
 
 # Silence some loggers
-logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
+logging.getLogger('pgoapi').setLevel(logging.WARNING)
 
-torches = []
+scanners = []
 
 # ===========================================================================
 
-log.info("PGLuminate starting up.")
+log.info("PGNumbra CompareScans starting up.")
+
+init_mr_mime()
 
 lat = cfg_get('latitude')
 lng = cfg_get('longitude')
@@ -30,17 +34,17 @@ with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):
         fields = line.split(",")
         fields = map(str.strip, fields)
-        torch = SingleLocationScanner(fields[0], fields[1], fields[2], lat,
-                                      lng, cfg_get('hash_key'),
-                                      get_new_proxy())
-        torches.append(torch)
-        t = Thread(target=torch.run, name="{}".format(torch.username))
+        scanner = SingleLocationScanner(fields[0], fields[1], fields[2], lat,
+                                        lng, cfg_get('hash_key'),
+                                        get_new_proxy())
+        scanners.append(scanner)
+        t = Thread(target=scanner.run)
         t.daemon = True
         t.start()
 
 # Start thread to print current status and get user input.
 t = Thread(target=print_status,
-           name='status_printer', args=(torches, "dummy"))
+           name='status_printer', args=(scanners, "dummy"))
 t.daemon = True
 t.start()
 
