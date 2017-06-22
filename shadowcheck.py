@@ -2,7 +2,7 @@ import logging
 import os
 from Queue import Queue
 from multiprocessing.pool import ThreadPool
-from threading import Lock
+from threading import Lock, Thread
 
 from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get, cfg_set
@@ -196,9 +196,34 @@ def log_results(key):
     if acc_stats[key]:
         log.info("{:7}: {}".format(key.upper(), acc_stats[key]))
 
+
+# Patch to make exceptions in threads cause an exception.
+def install_thread_excepthook():
+    """
+    Workaround for sys.excepthook thread bug
+    (https://sourceforge.net/tracker/?func=detail&atid=105470&aid=1230540&group_id=5470).
+    Call once from __main__ before creating any threads.
+    If using psyco, call psycho.cannotcompile(threading.Thread.run)
+    since this replaces a new-style class method.
+    """
+    import sys
+    run_old = Thread.run
+
+    def run(*args, **kwargs):
+        try:
+            run_old(*args, **kwargs)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            sys.excepthook(*sys.exc_info())
+
+    Thread.run = run
+
 # ===========================================================================
 
 log.info("ShadowCheck starting up.")
+
+install_thread_excepthook()
 
 lat = cfg_get('latitude')
 lng = cfg_get('longitude')
