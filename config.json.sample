@@ -7,7 +7,5 @@
   "scan_retries": 3,
   "include_nearby": false,
   "pokemon_name_format": "USE EITHER full OR short OR id",
-  "shadowcheck_threads": 10,
-  "login_retries": 3,
-  "login_delay": 6
+  "shadowcheck_threads": 2
 }
