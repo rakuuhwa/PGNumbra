@@ -28,8 +28,7 @@ class SingleLocationScanner(POGOAccount):
         # Initial random delay to spread logins.
         time.sleep(random.randint(0, 10))
         while True:
-            if self.check_login():
-                self.scan_location()
+            self.scan_once()
             time.sleep(15)
 
     def scan_once(self):
@@ -45,14 +44,7 @@ class SingleLocationScanner(POGOAccount):
                                                              self.longitude,
                                                              tries))
             try:
-                cell_ids = get_cell_ids(self.latitude, self.longitude)
-                timestamps = [0, ] * len(cell_ids)
-                responses = self.perform_request(
-                    lambda req: req.get_map_objects(
-                        latitude=f2i(self.latitude),
-                        longitude=f2i(self.longitude),
-                        since_timestamp_ms=timestamps, cell_id=cell_ids))
-
+                responses = self.req_get_map_objects()
                 self.count_pokemon(responses)
                 if self.pokemon:
                     self.log_info("Successfully scanned location")
