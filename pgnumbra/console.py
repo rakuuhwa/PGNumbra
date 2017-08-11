@@ -54,26 +54,26 @@ def print_status(scanners, dummy):
 def determine_seen_pokemon(scanners):
     seen = {}
     for t in scanners:
-        for pid in t.pokemon:
+        for pid in t.seen_pokemon:
             seen[pid] = get_pokemon_name(pid)
     return seen
 
 
 def print_scanners(lines, state, scanners):
     def scanner_line(current_line, scanner, seen_pokemon):
-        km_walked_f = scanner.player_stats.get('km_walked')
+        km_walked_f = scanner.get_stats('km_walked', None)
         if km_walked_f is not None:
             km_walked_str = '{:.0f}'.format(km_walked_f)
         else:
             km_walked_str = ""
-        warn = scanner.player_state.get('warn')
+        warn = scanner.get_state('warn')
         warned = '' if warn is None else ('Yes' if warn else 'No')
-        ban = scanner.player_state.get('banned')
+        ban = scanner.get_state('banned')
         banned = '' if ban is None else ('Yes' if ban else 'No')
         cols = [
             current_line,
             scanner.username,
-            scanner.player_stats.get('level', ''),
+            scanner.get_stats('level', ''),
             km_walked_str,
             warned,
             banned
@@ -81,12 +81,12 @@ def print_scanners(lines, state, scanners):
         if ban == True:
             cols.append('Account banned!')
             return msg_tmpl.format(*cols)
-        elif not scanner.pokemon:
+        elif not scanner.seen_pokemon:
             cols.append(scanner.last_msg or '')
             return msg_tmpl.format(*cols)
         else:
             for pid in sorted(seen_pokemon):
-                cols.append(scanner.pokemon.get(pid, ''))
+                cols.append(scanner.seen_pokemon.get(pid, ''))
             return line_tmpl.format(*cols)
 
     len_num = str(len(str(len(scanners))))
