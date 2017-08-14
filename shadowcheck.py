@@ -5,7 +5,7 @@ from Queue import Queue
 from multiprocessing.pool import ThreadPool
 from threading import Lock, Thread
 
-from mrmime import init_mr_mime
+from mrmime import init_mr_mime, mrmime_pgpool_enabled
 
 from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get, cfg_set
@@ -110,6 +110,9 @@ def save_account_info(acc):
     )
     write_line_to_file(ACC_INFO_FILE, line)
 
+    if mrmime_pgpool_enabled():
+        acc.update_pgpool()
+
 
 def init_account_info_file(torches):
     global acc_info_tmpl
@@ -198,7 +201,9 @@ log.info("PGNumbra ShadowCheck starting up.")
 install_thread_excepthook()
 sys.excepthook = handle_exception
 
-init_mr_mime()
+init_mr_mime(user_cfg={
+    'pgpool_auto_update': False
+})
 
 lat = cfg_get('latitude')
 lng = cfg_get('longitude')
