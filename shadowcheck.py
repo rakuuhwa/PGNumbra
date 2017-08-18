@@ -1,10 +1,11 @@
 import logging
 import os
+import sys
 from Queue import Queue
 from multiprocessing.pool import ThreadPool
 from threading import Lock, Thread
 
-from mrmime import init_mr_mime
+from mrmime import init_mr_mime, mrmime_pgpool_enabled
 
 from pgnumbra.SingleLocationScanner import SingleLocationScanner
 from pgnumbra.config import cfg_get, cfg_set
@@ -24,41 +25,6 @@ logging.getLogger('pgoapi').setLevel(logging.WARNING)
 
 FILE_PREFIX = 'accounts'
 ACC_INFO_FILE = FILE_PREFIX + '-info.txt'
-
-COMMON_POKEMON = [
-    16,     # Pidgey
-    19,     # Rattata
-    23,     # Ekans
-    27,     # Sandshrew
-    29,     # Nidoran F
-    32,     # Nidoran M
-    41,     # Zubat
-    43,     # Oddish
-    46,     # Paras
-    52,     # Meowth
-    54,     # Psyduck
-    60,     # Poliwag
-    69,     # Bellsprout
-    72,     # Tentacool
-    74,     # Geodude
-    77,     # Ponyta
-    81,     # Magnemite
-    98,     # Krabby
-    118,    # Goldeen
-    120,    # Staryu
-    129,    # Magikarp
-    161,    # Sentret
-    165,    # Ledyba
-    167,    # Spinarak
-    177,    # Natu
-    183,    # Marill
-    187,    # Hoppip
-    191,    # Sunkern
-    194,    # Wooper
-    198,    # Murkrow
-    209,    # Snubbull
-    218     # Slugma
-]
 
 acc_stats = {
     'good': 0,
@@ -84,7 +50,7 @@ def check_account(torch):
         log.exception("Error checking account {}".format(torch.username))
 
     try:
-        if torch.pokemon:
+        if torch.seen_pokemon:
             if is_blind(torch):
                 log.info("Account {} is shadowbanned. :-(".format(torch.username))
                 save_to_file(torch, 'blind')
@@ -122,26 +88,30 @@ def save_account_info(acc):
     def bool(x):
         return '' if x is None else ('Yes' if x else 'No')
 
-    km_walked_f = acc.player_stats.get('km_walked')
+    km_walked_f = acc.get_stats('km_walked')
     if km_walked_f:
         km_walked_str = '{:.1f} km'.format(km_walked_f)
     else:
         km_walked_str = ''
     line = acc_info_tmpl.format(
         acc.username,
-        acc.player_stats.get('level', ''),
-        acc.player_stats.get('experience', ''),
         bool(acc.is_warned()),
         bool(acc.is_banned()),
+        bool(acc.get_state('banned')),
         bool(acc.has_captcha()),
         bool(is_blind(acc)),
-        acc.player_stats.get('pokemons_encountered', ''),
-        acc.player_stats.get('pokeballs_thrown', ''),
-        acc.player_stats.get('pokemons_captured', ''),
-        acc.player_stats.get('poke_stop_visits', ''),
+        acc.get_stats('level', ''),
+        acc.get_stats('experience', ''),
+        acc.get_stats('pokemons_encountered', ''),
+        acc.get_stats('pokeballs_thrown', ''),
+        acc.get_stats('pokemons_captured', ''),
+        acc.get_stats('poke_stop_visits', ''),
         km_walked_str
     )
     write_line_to_file(ACC_INFO_FILE, line)
+
+    if mrmime_pgpool_enabled():
+        acc.update_pgpool()
 
 
 def init_account_info_file(torches):
@@ -151,15 +121,16 @@ def init_account_info_file(torches):
     for t in torches:
         max_username_len = max(max_username_len, len(t.username))
     acc_info_tmpl = '{:' + str(
-        max_username_len) + '} | {:3} | {:8} | {:4} | {:3} | {:7} | {:5} | {:6} | {:5} | {:5} | {:5} | {:10}\n'
+        max_username_len) + '} | {:4} | {:3} | {:4} | {:7} | {:5} | {:3} | {:8} | {:6} | {:5} | {:5} | {:5} | {:10}\n'
     line = acc_info_tmpl.format(
         'Username',
-        'Lvl',
-        'XP',
         'Warn',
         'Ban',
+        'BanF',
         'Captcha',
         'Blind',
+        'Lvl',
+        'XP',
         'Enc',
         'Thr.',
         'Cap',
@@ -179,13 +150,10 @@ def save_to_file(torch, suffix):
 
 def is_blind(torch):
     # We don't know if we did not search/find ANY Pokemon
-    if not torch.pokemon:
+    if not torch.seen_pokemon:
         return None
 
-    for pid in torch.pokemon:
-        if pid not in COMMON_POKEMON:
-            return False
-    return True
+    return torch.rareless_scans != 0
 
 
 def log_results(key):
@@ -215,13 +183,27 @@ def install_thread_excepthook():
 
     Thread.run = run
 
+
+# Exception handler will log unhandled exceptions.
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    log.error("Uncaught exception", exc_info=(
+        exc_type, exc_value, exc_traceback))
+
+
 # ===========================================================================
 
 log.info("PGNumbra ShadowCheck starting up.")
 
 install_thread_excepthook()
+sys.excepthook = handle_exception
 
-init_mr_mime()
+init_mr_mime(user_cfg={
+    'pgpool_auto_update': False
+})
 
 lat = cfg_get('latitude')
 lng = cfg_get('longitude')

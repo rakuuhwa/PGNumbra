@@ -25,14 +25,3 @@ def shorten(s):
         if ch in s:
             s = s.replace(ch, '')
     return s[:3]
-
-
-def get_player_stats(response_dict):
-    inventory_items = response_dict.get('responses', {})\
-        .get('GET_INVENTORY', {}).get('inventory_delta', {})\
-        .get('inventory_items', [])
-    for item in inventory_items:
-        item_data = item.get('inventory_item_data', {})
-        if 'player_stats' in item_data:
-            return item_data['player_stats']
-    return {}

@@ -22,7 +22,7 @@ class SingleLocationScanner(POGOAccount):
         self.set_position(self.latitude, self.longitude, random.randrange(3, 170))
 
         # The currently seen Pokemon
-        self.pokemon = {}
+        self.seen_pokemon = {}
 
     def run(self):
         # Initial random delay to spread logins.
@@ -33,7 +33,10 @@ class SingleLocationScanner(POGOAccount):
 
     def scan_once(self):
         if self.check_login():
+            rareless_before = self.rareless_scans
             self.scan_location()
+            if self.rareless_scans > rareless_before:
+                self.shadowbanned = True
 
     def scan_location(self):
         tries = 0
@@ -46,7 +49,7 @@ class SingleLocationScanner(POGOAccount):
             try:
                 responses = self.req_get_map_objects()
                 self.count_pokemon(responses)
-                if self.pokemon:
+                if self.seen_pokemon:
                     self.log_info("Successfully scanned location")
                     return
                 else:
@@ -59,14 +62,13 @@ class SingleLocationScanner(POGOAccount):
         self.log_error("Failed {} times. Giving up.".format(max_tries))
 
     def count_pokemon(self, response):
-        self.pokemon = {}
-        cells = response.get('GET_MAP_OBJECTS', {}).get('map_cells', [])
+        self.seen_pokemon = {}
+        cells = response['GET_MAP_OBJECTS'].map_cells
         for cell in cells:
-            for p in cell.get('wild_pokemons', []):
-                pid = p['pokemon_data']['pokemon_id']
-                self.pokemon[pid] = self.pokemon.get(pid, 0) + 1
+            for p in cell.wild_pokemons:
+                pid = p.pokemon_data.pokemon_id
+                self.seen_pokemon[pid] = self.seen_pokemon.get(pid, 0) + 1
             if cfg_get('include_nearby'):
-                for p in cell.get('nearby_pokemons', []):
-                    pid = p['pokemon_id']
-                    self.pokemon[pid] = self.pokemon.get(pid, 0) + 1
-
+                for p in cell.nearby_pokemons:
+                    pid = p.pokemon_id
+                    self.seen_pokemon[pid] = self.seen_pokemon.get(pid, 0) + 1
