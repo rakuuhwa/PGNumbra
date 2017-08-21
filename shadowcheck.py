@@ -111,7 +111,7 @@ def save_account_info(acc):
     write_line_to_file(ACC_INFO_FILE, line)
 
     if mrmime_pgpool_enabled():
-        acc.update_pgpool()
+        acc.update_pgpool(release=True)
 
 
 def init_account_info_file(torches):
